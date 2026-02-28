@@ -4,7 +4,7 @@ import { DiaryInputs, DiaryOutput, SessionType, BlockerMode } from "../types";
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
 
 export const generateDiaryContent = async (inputs: DiaryInputs): Promise<DiaryOutput> => {
-  const model = 'gemini-1.5-flash';
+  const model = 'gemini-2.5-flash';
 
   // Parse exact skills user selected — AI must NEVER change this
   const exactSkills = inputs.skillsUsed
