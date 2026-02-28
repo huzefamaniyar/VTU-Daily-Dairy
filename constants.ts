@@ -98,66 +98,80 @@ export const AVAILABLE_SKILLS = [
   'Xamarin',
 ];
 
-// ─── Skill Matching Rules ────────────────────────────────────────────────────
-// Each skill has:
-//   keywords  → topic must contain AT LEAST ONE of these to match
-//   exclude   → topic must NOT contain any of these (prevents false positives)
 // ─────────────────────────────────────────────────────────────────────────────
+// SKILL MATCHING RULES
+//
+// keywords : topic must include AT LEAST ONE of these (case-insensitive)
+// exclude  : topic must NOT include any of these (prevents false positives)
+//
+// LESSONS LEARNED (do NOT revert these):
+//   ✗ ' ts '   → matches "tasks", "sets", "contents", "buttons"  → REMOVED
+//   ✗ ' js '   → matches words ending in "js" unexpectedly        → REMOVED
+//   ✗ 'kotlin' in Android Studio → matches Kotlin Playground      → REMOVED
+//   ✗ 'script' alone → matches "description", "javascript"        → REMOVED
+//   ✗ 'android' alone → matches unrelated words                   → REMOVED
+//   ✗ 'java' without exclude → matches "javascript"               → MUST EXCLUDE
+// ─────────────────────────────────────────────────────────────────────────────
+
 export const SKILL_RULES: Record<string, { keywords: string[]; exclude?: string[] }> = {
 
-  // ── Frontend ──────────────────────────────────────────────────────────────
+  // ── Frontend Frameworks ──────────────────────────────────────────────────
   'React': {
-    keywords: ['react', 'hooks', 'usestate', 'useeffect', 'jsx', 'react router', 'react component'],
-    exclude: ['react native'] // react native → Flutter/Mobile not React
+    keywords: ['react hooks', 'usestate', 'useeffect', 'jsx', 'react router', 'react component', 'react app', 'react state', 'react props', 'create react app'],
+    exclude: ['react native'],
   },
   'React.js': {
-    keywords: ['react.js', 'reactjs', 'react js'],
+    keywords: ['react.js', 'reactjs'],
   },
   'Angular': {
-    keywords: ['angular', 'angularjs', 'ng-'],
+    keywords: ['angular', 'angularjs', 'angular component', 'angular service', 'angular module'],
   },
   'Vue.js': {
-    keywords: ['vue', 'vuejs', 'vue.js', 'vuex', 'nuxt'],
+    keywords: ['vue.js', 'vuejs', 'vue js', 'vuex', 'nuxt'],
   },
-  'JavaScript': {
-    keywords: ['javascript', ' js ', 'es6', 'es2015', 'dom manipulation', 'vanilla js', 'ajax', 'fetch api'],
-    exclude: ['node.js', 'nodejs'] // Node handled separately
-  },
-  'TypeScript': {
-    keywords: ['typescript', ' ts ', '.ts file', 'type annotations', 'interface typescript'],
-  },
+
+  // ── Core Web ──────────────────────────────────────────────────────────────
   'HTML': {
-    keywords: ['html', 'html5', 'markup', 'semantic html', 'html tags', 'webpage structure'],
-    exclude: ['css', 'javascript'] // if topic is specifically HTML only
+    keywords: ['html5', 'semantic html', 'html tags', 'html form', 'html layout', 'html structure', 'html page', 'html element'],
   },
   'CSS': {
-    keywords: ['css', 'css3', 'tailwind', 'bootstrap', 'flexbox', 'grid layout', 'sass', 'scss', 'stylesheet', 'responsive design'],
+    keywords: ['css3', 'tailwind', 'bootstrap', 'flexbox', 'css grid', 'sass', 'scss', 'stylesheet', 'responsive design', 'media query', 'css styling'],
+  },
+  'JavaScript': {
+    keywords: ['javascript', 'es6', 'dom manipulation', 'vanilla js', 'ajax', 'fetch api', 'javascript function', 'javascript array', 'javascript object', 'javascript event', 'javascript promise'],
+    exclude: ['node.js', 'nodejs', 'typescript', 'react', 'vue', 'angular'],
+  },
+  'TypeScript': {
+    // NOTE: NEVER add ' ts ' — it matches "tasks", "sets", "contents" etc.
+    keywords: ['typescript', '.tsx', 'type annotations', 'typescript interface', 'typescript generics', 'typescript class', 'typescript function', 'typed javascript'],
   },
   'D3.js': {
-    keywords: ['d3', 'd3.js', 'd3js'],
+    keywords: ['d3.js', 'd3js', 'd3 chart', 'd3 visualization'],
   },
 
   // ── Backend ───────────────────────────────────────────────────────────────
   'Node.js': {
-    keywords: ['node.js', 'nodejs', 'node js', 'express', 'express.js', 'npm', 'backend javascript'],
+    keywords: ['node.js', 'nodejs', 'express.js', 'express js', 'backend javascript', 'node server', 'node module'],
   },
   'Python': {
-    keywords: ['python', 'django', 'flask', 'fastapi', 'web scraping', 'automation script', 'pandas', 'numpy'],
-    exclude: ['tensorflow', 'pytorch', 'keras', 'machine learning', 'deep learning'] // ML Python handled separately
+    // NOTE: No 'script' alone — matches "description", "javascript"
+    keywords: ['python', 'django', 'flask', 'fastapi', 'web scraping', 'pandas', 'numpy', 'python programming', 'python code', 'python function', 'python class', 'python module'],
+    exclude: ['tensorflow', 'pytorch', 'keras', 'machine learning', 'deep learning', 'scikit'],
   },
   'Java': {
-    keywords: ['java', 'spring boot', 'spring framework', 'java servlet', 'maven', 'hibernate'],
-    exclude: ['javascript'] // avoid false match
+    // NOTE: MUST exclude 'javascript' — very common false positive
+    keywords: ['java programming', 'spring boot', 'spring framework', 'java servlet', 'maven', 'hibernate', 'java class', 'java method', 'java backend', 'core java'],
+    exclude: ['javascript'],
   },
   'C++': {
-    keywords: ['c++', 'cpp', 'c plus plus', 'stl', 'object oriented c'],
+    keywords: ['c++', 'cpp', 'c plus plus', 'stl', 'c++ program'],
   },
   'PHP': {
-    keywords: ['php', 'php scripting', 'php backend'],
-    exclude: ['laravel', 'cakephp', 'codeigniter', 'filament'] // specific frameworks handled separately
+    keywords: ['php programming', 'php scripting', 'php backend', 'php function'],
+    exclude: ['laravel', 'cakephp', 'codeigniter', 'filament'],
   },
   'Laravel': {
-    keywords: ['laravel', 'laravel framework', 'laravel blade', 'eloquent orm'],
+    keywords: ['laravel', 'laravel framework', 'laravel blade', 'eloquent orm', 'laravel route'],
   },
   'CakePHP': {
     keywords: ['cakephp', 'cake php'],
@@ -166,10 +180,10 @@ export const SKILL_RULES: Record<string, { keywords: string[]; exclude?: string[
     keywords: ['codeigniter', 'code igniter'],
   },
   'FilamentPHP': {
-    keywords: ['filament', 'filamentphp', 'filament admin'],
+    keywords: ['filament', 'filamentphp'],
   },
   'Ruby on Rails': {
-    keywords: ['rails', 'ruby on rails', 'ror', 'ruby framework'],
+    keywords: ['ruby on rails', 'rails framework', 'ruby rails'],
   },
   'WordPress': {
     keywords: ['wordpress', 'wp theme', 'wp plugin', 'woocommerce'],
@@ -177,85 +191,81 @@ export const SKILL_RULES: Record<string, { keywords: string[]; exclude?: string[
 
   // ── Mobile ────────────────────────────────────────────────────────────────
   'Android Studio': {
-    keywords: ['android studio', 'android app', 'android development', 'android sdk'],
+    // NOTE: NEVER add 'kotlin' here — Kotlin Playground topics would match falsely
+    // NOTE: NEVER add 'android' alone — too broad
+    keywords: ['android studio', 'android app', 'android development', 'android sdk', 'android project', 'android emulator', 'android activity', 'android fragment', 'android layout'],
   },
   'Kotlin': {
-    keywords: ['kotlin', 'kotlin android'],
+    keywords: ['kotlin', 'kotlin playground', 'kotlin function', 'kotlin class', 'kotlin coroutine', 'kotlin lambda', 'kotlin programming', 'kotlin syntax', 'kotlin list', 'kotlin collections', 'kotlin extension'],
   },
   'Swift': {
-    keywords: ['swift', 'ios development', 'swiftui', 'xcode'],
+    keywords: ['swift', 'ios development', 'swiftui', 'xcode', 'swift programming'],
   },
   'Flutter': {
-    keywords: ['flutter', 'dart', 'flutter widget', 'flutter app'],
+    keywords: ['flutter', 'dart', 'flutter widget', 'flutter app', 'flutter ui'],
   },
   'Xamarin': {
-    keywords: ['xamarin', 'xamarin forms', 'xamarin android'],
+    keywords: ['xamarin', 'xamarin forms'],
   },
   'Objective-C': {
     keywords: ['objective-c', 'objectivec', 'objc'],
   },
 
-  // ── Database ──────────────────────────────────────────────────────────────
+  // ── Databases ─────────────────────────────────────────────────────────────
   'MySQL': {
-    keywords: ['mysql', 'mysql database', 'mysql query', 'mysql workbench'],
+    keywords: ['mysql', 'mysql database', 'mysql query', 'mysql workbench', 'mysql table'],
   },
   'PostgreSQL': {
     keywords: ['postgresql', 'postgres', 'psql'],
   },
   'MongoDB': {
-    keywords: ['mongodb', 'mongo', 'mongoose'],
+    keywords: ['mongodb', 'mongoose', 'mongodb collection', 'mongodb query'],
   },
   'Cassandra': {
     keywords: ['cassandra', 'apache cassandra'],
   },
   'NoSQL': {
     keywords: ['nosql', 'no-sql', 'document database', 'key-value store'],
-    exclude: ['mongodb', 'cassandra'] // specific ones handled above
+    exclude: ['mongodb', 'cassandra'],
   },
   'SQL': {
-    keywords: ['sql query', 'sql joins', 'sql commands', 'structured query language', 'sql basics'],
-    exclude: ['mysql', 'postgresql', 'nosql'] // specific DBs handled separately
+    keywords: ['sql query', 'sql joins', 'sql commands', 'structured query language', 'sql basics', 'sql table', 'sql select'],
+    exclude: ['mysql', 'postgresql', 'nosql'],
   },
   'Database Design': {
     keywords: ['database design', 'schema design', 'er diagram', 'entity relationship', 'normalization'],
   },
   'Data Modeling': {
-    keywords: ['data modeling', 'data model', 'uml diagram', 'data schema'],
+    keywords: ['data modeling', 'data model', 'uml diagram'],
   },
   'Indexing': {
-    keywords: ['indexing', 'database index', 'query optimization', 'b-tree index'],
+    keywords: ['database index', 'query optimization', 'b-tree index'],
   },
 
   // ── Cloud & DevOps ────────────────────────────────────────────────────────
   'AWS': {
-    keywords: ['aws', 'amazon web services', 'ec2', 's3', 'lambda', 'rds aws', 'cloudwatch'],
+    keywords: ['aws', 'amazon web services', 'ec2', 's3 bucket', 'aws lambda', 'cloudwatch'],
   },
   'Azure': {
     keywords: ['azure', 'microsoft azure', 'azure devops', 'azure functions'],
   },
   'Google Cloud': {
-    keywords: ['gcp', 'google cloud', 'firebase', 'google cloud platform', 'bigquery'],
+    keywords: ['gcp', 'google cloud platform', 'firebase', 'bigquery', 'cloud firestore'],
   },
   'Docker': {
-    keywords: ['docker', 'dockerfile', 'docker compose', 'containerization', 'docker image'],
+    keywords: ['docker', 'dockerfile', 'docker compose', 'docker image', 'docker container'],
   },
   'Kubernetes': {
     keywords: ['kubernetes', 'k8s', 'kubectl', 'container orchestration'],
   },
   'DevOps': {
-    keywords: ['devops', 'ci/cd', 'pipeline', 'continuous integration', 'continuous deployment', 'jenkins', 'github actions'],
+    keywords: ['devops', 'ci/cd', 'continuous integration', 'continuous deployment', 'jenkins', 'github actions'],
   },
-  'IaaS': {
-    keywords: ['iaas', 'infrastructure as a service'],
-  },
-  'PaaS': {
-    keywords: ['paas', 'platform as a service'],
-  },
-  'SaaS': {
-    keywords: ['saas', 'software as a service'],
-  },
+  'IaaS': { keywords: ['iaas', 'infrastructure as a service'] },
+  'PaaS': { keywords: ['paas', 'platform as a service'] },
+  'SaaS': { keywords: ['saas', 'software as a service'] },
   'Cloud access control': {
-    keywords: ['cloud access', 'iam', 'identity access management', 'cloud permissions'],
+    keywords: ['cloud access control', 'iam policy', 'identity access management', 'cloud iam'],
   },
 
   // ── Networking ────────────────────────────────────────────────────────────
@@ -263,30 +273,30 @@ export const SKILL_RULES: Record<string, { keywords: string[]; exclude?: string[
     keywords: ['network architecture', 'network design', 'network topology', 'osi model'],
   },
   'TCP/IP': {
-    keywords: ['tcp/ip', 'tcp ip', 'ip protocol', 'transport layer', 'network protocol'],
+    keywords: ['tcp/ip', 'tcp ip', 'ip protocol', 'transport layer protocol'],
   },
   'LAN': {
-    keywords: [' lan ', 'local area network', 'ethernet', 'lan setup'],
+    keywords: ['local area network', 'lan setup', 'lan network'],
   },
   'WAN': {
-    keywords: [' wan ', 'wide area network', 'wan setup'],
+    keywords: ['wide area network', 'wan setup', 'wan network'],
   },
   'DHCP': {
-    keywords: ['dhcp', 'dynamic host configuration', 'ip assignment'],
+    keywords: ['dhcp', 'dynamic host configuration', 'dhcp server'],
   },
   'Firewall Configuration': {
-    keywords: ['firewall', 'network security rules', 'packet filtering', 'iptables'],
+    keywords: ['firewall', 'firewall rules', 'packet filtering', 'iptables'],
   },
   'VPNs': {
     keywords: ['vpn', 'virtual private network', 'vpn setup', 'vpn tunnel'],
   },
   'Data Encryption': {
-    keywords: ['encryption', 'aes', 'rsa encryption', 'ssl tls', 'cryptography', 'hashing'],
+    keywords: ['encryption', 'aes encryption', 'rsa encryption', 'ssl tls', 'cryptography'],
   },
 
   // ── AI / ML ───────────────────────────────────────────────────────────────
   'Machine Learning': {
-    keywords: ['machine learning', ' ml ', 'supervised learning', 'unsupervised learning', 'classification', 'regression model', 'training model'],
+    keywords: ['machine learning', 'supervised learning', 'unsupervised learning', 'classification model', 'regression model', 'ml model', 'ml algorithm'],
   },
   'TensorFlow': {
     keywords: ['tensorflow', 'tf.keras', 'tensorflow model'],
@@ -301,18 +311,18 @@ export const SKILL_RULES: Record<string, { keywords: string[]; exclude?: string[
     keywords: ['scikit-learn', 'sklearn', 'scikit learn'],
   },
   'Natural Language Processing': {
-    keywords: ['nlp', 'natural language processing', 'text classification', 'tokenization', 'sentiment analysis', 'named entity', 'language model'],
+    keywords: ['nlp', 'natural language processing', 'text classification', 'tokenization', 'sentiment analysis', 'text mining'],
   },
   'Computer Vision': {
-    keywords: ['computer vision', 'image recognition', 'object detection', 'opencv', 'image segmentation', 'cnn'],
+    keywords: ['computer vision', 'image recognition', 'object detection', 'opencv', 'image segmentation'],
   },
   'Intelligent Machines': {
-    keywords: ['intelligent machine', 'ai automation', 'robotic process', 'autonomous system'],
+    keywords: ['intelligent machine', 'ai automation', 'robotic process automation'],
   },
 
   // ── Data & Visualization ──────────────────────────────────────────────────
   'Data Visualization': {
-    keywords: ['data visualization', 'charts', 'graphs', 'matplotlib', 'seaborn', 'plotly'],
+    keywords: ['data visualization', 'matplotlib', 'seaborn', 'plotly', 'visualizing data'],
   },
   'Power BI': {
     keywords: ['power bi', 'powerbi', 'power bi dashboard'],
@@ -321,21 +331,22 @@ export const SKILL_RULES: Record<string, { keywords: string[]; exclude?: string[
     keywords: ['tableau', 'tableau dashboard', 'tableau workbook'],
   },
   'Statistical Analysis': {
-    keywords: ['statistical analysis', 'statistics', 'hypothesis testing', 'p-value', 'regression analysis', 'anova'],
+    keywords: ['statistical analysis', 'hypothesis testing', 'regression analysis', 'anova', 'statistics'],
   },
 
-  // ── Design & UI ───────────────────────────────────────────────────────────
+  // ── UI/UX & Design Tools ──────────────────────────────────────────────────
   'UI/UX': {
-    keywords: ['ui/ux', 'user interface', 'user experience', 'wireframe', 'prototyping', 'usability'],
+    // NOTE: Only match when topic EXPLICITLY mentions ui/ux design work
+    keywords: ['ui/ux', 'user interface design', 'user experience design', 'wireframe', 'usability testing', 'ui design', 'ux design', 'ux research'],
   },
   'Figma': {
-    keywords: ['figma', 'figma design', 'figma prototype'],
+    keywords: ['figma', 'figma design', 'figma prototype', 'figma component'],
   },
   'Adobe Photoshop': {
-    keywords: ['photoshop', 'adobe photoshop', 'psd', 'photo editing'],
+    keywords: ['photoshop', 'adobe photoshop', 'psd file', 'photo editing'],
   },
   'Adobe Illustrator': {
-    keywords: ['illustrator', 'adobe illustrator', 'vector graphic', 'ai file'],
+    keywords: ['illustrator', 'adobe illustrator', 'vector graphic'],
   },
   'Adobe Indesign': {
     keywords: ['indesign', 'adobe indesign', 'desktop publishing'],
@@ -344,15 +355,16 @@ export const SKILL_RULES: Record<string, { keywords: string[]; exclude?: string[
     keywords: ['canva', 'canva design', 'canva template'],
   },
   'Layout Design': {
-    keywords: ['layout design', 'page layout', 'grid layout design', 'print layout'],
+    keywords: ['layout design', 'page layout', 'print layout'],
+    exclude: ['css'],
   },
   'Interior and Exterior Design': {
-    keywords: ['interior design', 'exterior design', 'interior decoration', '3d interior'],
+    keywords: ['interior design', 'exterior design', '3d interior'],
   },
 
   // ── Hardware & Electronics ────────────────────────────────────────────────
   'Circuit Design': {
-    keywords: ['circuit design', 'pcb', 'circuit board', 'schematic', 'electronic circuit'],
+    keywords: ['circuit design', 'pcb design', 'circuit board', 'schematic diagram'],
   },
   'Embedded Systems': {
     keywords: ['embedded system', 'microcontroller', 'arduino', 'raspberry pi', 'firmware', 'rtos'],
@@ -370,66 +382,67 @@ export const SKILL_RULES: Record<string, { keywords: string[]; exclude?: string[
     keywords: ['iot', 'internet of things', 'iot sensor', 'iot device', 'mqtt'],
   },
   'Physical Design': {
-    keywords: ['physical design', 'place and route', 'floorplan', 'timing analysis'],
+    keywords: ['physical design', 'place and route', 'floorplan design'],
   },
   'Verification & Validations': {
-    keywords: ['verification', 'validation', 'testbench', 'unit testing', 'qa testing', 'test cases'],
+    // NOTE: Only match when topic explicitly mentions testing/verification work
+    keywords: ['verification testing', 'validation testing', 'testbench', 'unit testing', 'test cases writing', 'qa testing', 'software testing'],
   },
 
   // ── BIM / CAD / Manufacturing ─────────────────────────────────────────────
   '3D PRINTING CONCEPTS, DESIGN AND PRINTING': {
-    keywords: ['3d printing', '3d print', 'additive manufacturing', 'stl file', 'fdm printing'],
+    keywords: ['3d printing', 'additive manufacturing', 'stl file', 'fdm printing'],
   },
   'Product Design & 3D Printing': {
-    keywords: ['product design 3d', '3d product', 'cad 3d print'],
+    keywords: ['product design 3d', '3d product design', 'cad 3d print'],
   },
   'Product Design & Manufacturing': {
-    keywords: ['product design', 'manufacturing design', 'industrial design'],
-    exclude: ['3d print'] // handled separately above
+    keywords: ['product design', 'industrial design'],
+    exclude: ['3d print'],
   },
   'Manufacturing': {
-    keywords: ['manufacturing', 'production process', 'cnc', 'machining', 'lean manufacturing'],
+    keywords: ['manufacturing', 'cnc machining', 'lean manufacturing', 'production process'],
   },
   'BIM CONCEPTS WITH MEP AND PRODUCT DESIGN': {
-    keywords: ['bim mep', 'mep design', 'bim product', 'mechanical electrical plumbing'],
+    keywords: ['bim mep', 'mep design', 'mechanical electrical plumbing'],
   },
   'BIM FOR ARCHITECTURE': {
-    keywords: ['bim architecture', 'bim revit architecture', 'archicad', 'architectural bim'],
+    keywords: ['bim architecture', 'architectural bim', 'revit architecture', 'archicad'],
   },
   'BIM FOR CONSTRUCTION': {
-    keywords: ['bim construction', 'construction bim', 'revit construction'],
+    keywords: ['bim construction', 'construction bim'],
   },
   'BIM FOR STRUCTURES': {
-    keywords: ['bim structure', 'structural bim', 'structural revit'],
+    keywords: ['bim structure', 'structural bim'],
   },
   'BIM FOR HIGHWAY ENGINEERING': {
-    keywords: ['bim highway', 'highway bim', 'civil bim', 'road bim'],
+    keywords: ['bim highway', 'highway bim', 'road design bim'],
   },
 
   // ── Tools ─────────────────────────────────────────────────────────────────
   'Git': {
-    keywords: ['git', 'github', 'gitlab', 'version control', 'git commit', 'branching', 'merge conflict'],
+    keywords: ['git commit', 'git branch', 'git merge', 'github repository', 'gitlab', 'version control', 'pull request', 'git push'],
   },
   'Godot': {
-    keywords: ['godot', 'godot engine', 'gdscript', 'game development godot'],
+    keywords: ['godot', 'godot engine', 'gdscript'],
   },
 
   // ── Business ──────────────────────────────────────────────────────────────
   'Business Management': {
-    keywords: ['business management', 'project management', 'team management', 'agile', 'scrum'],
+    keywords: ['business management', 'project management', 'agile methodology', 'scrum methodology'],
   },
   'Marketing': {
-    keywords: ['marketing', 'digital marketing', 'content marketing', 'social media marketing'],
-    exclude: ['seo'] // handled separately
+    keywords: ['digital marketing', 'content marketing', 'social media marketing', 'marketing strategy'],
+    exclude: ['seo'],
   },
   'SEO': {
-    keywords: ['seo', 'search engine optimization', 'on-page seo', 'off-page seo', 'keyword research'],
+    keywords: ['seo', 'search engine optimization', 'on-page seo', 'keyword research'],
   },
   'Finance': {
     keywords: ['finance', 'financial statements', 'balance sheet', 'accounting', 'budgeting'],
   },
   'Economics': {
-    keywords: ['economics', 'macroeconomics', 'microeconomics', 'supply demand', 'gdp'],
+    keywords: ['economics', 'macroeconomics', 'microeconomics', 'supply and demand'],
   },
 };
 
@@ -437,22 +450,20 @@ export const SKILL_RULES: Record<string, { keywords: string[]; exclude?: string[
 export const matchSkillsFromTopic = (topic: string): string[] => {
   if (!topic) return [];
 
-  const topicLower = ' ' + topic.toLowerCase() + ' '; // pad with spaces for word boundary matching
+  const topicLower = ' ' + topic.toLowerCase() + ' ';
   const matchedSkills: Set<string> = new Set();
 
   Object.entries(SKILL_RULES).forEach(([skill, rule]) => {
-    // Check if any keyword matches
     const hasKeyword = rule.keywords.some(keyword => topicLower.includes(keyword));
     if (!hasKeyword) return;
 
-    // Check if any exclusion word is present
     const hasExclusion = rule.exclude?.some(excl => topicLower.includes(excl));
     if (hasExclusion) return;
 
     matchedSkills.add(skill);
   });
 
-  // De-duplicate: if React is matched, remove React.js (they are the same)
+  // De-duplicate: if React also matched React.js, keep only React
   if (matchedSkills.has('React') && matchedSkills.has('React.js')) {
     matchedSkills.delete('React.js');
   }
@@ -460,5 +471,5 @@ export const matchSkillsFromTopic = (topic: string): string[] => {
   return Array.from(matchedSkills).sort();
 };
 
-// Keep AVAILABLE_SKILLS as the master list used in dropdowns
-export const SKILL_KEYWORDS = SKILL_RULES; // backward compat alias if used elsewhere
+// Backward compatibility
+export const SKILL_KEYWORDS = SKILL_RULES;
