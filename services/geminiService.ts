@@ -1,68 +1,77 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import { DiaryInputs, DiaryOutput, SessionType, BlockerMode } from "../types";
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
 
 export const generateDiaryContent = async (inputs: DiaryInputs): Promise<DiaryOutput> => {
-  const model = 'gemini-3-flash-preview';
+  const model = 'gemini-2.5-flash-preview-05-20';
 
   // Determine blockers content based on mode
   let blockersInstruction = '';
   let blockersPrompt = '';
 
   if (inputs.blockerMode === BlockerMode.NONE) {
-    blockersInstruction = 'The "blockers" field should be the exact string "None".';
-    blockersPrompt = 'Set blockers to "None" (no blockers/risks).';
+    blockersInstruction = 'The "blockers" field must be exactly: "None".';
+    blockersPrompt = 'Set blockers to "None".';
   } else if (inputs.blockerMode === BlockerMode.CUSTOM) {
-    blockersInstruction = `The "blockers" field should contain exactly this custom user input: "${inputs.blockerInput}"`;
+    blockersInstruction = `The "blockers" field must contain exactly this text: "${inputs.blockerInput}"`;
     blockersPrompt = `Set blockers to: "${inputs.blockerInput}"`;
   } else {
     blockersInstruction = `BLOCKERS & RISKS RULES:
-    - MUST be realistic and directly related to the task/session topic.
-    - DO NOT simply say "None" or "No blockers".
-    - Focus on minor academic or technical hurdles.
-    - Examples: "Initial difficulty in grasping abstract concepts," "Minor configuration errors in the development environment," "Time constraints due to the complexity of the topic," "Required additional research to resolve logical errors," or "Need for more practice to achieve proficiency."`;
-    blockersPrompt = 'Generate realistic, minor academic or technical blockers/risks for this task.';
+    - Must be a single sentence describing one realistic minor challenge faced during THIS specific task.
+    - Must be directly related to "${inputs.topic}" — do not write generic blockers.
+    - Write it as a past-tense observation, e.g., "Understanding the difference between X and Y took more time than expected."
+    - Do NOT write "None". Do NOT list multiple blockers. Do NOT use bullet points.
+    - Keep it under 30 words.`;
+    blockersPrompt = `Write one realistic, specific minor challenge faced while working on: ${inputs.topic}.`;
   }
 
   const systemInstruction = `
-    You are an expert academic writer specialized in VTU (Visvesvaraya Technological University) internship documentation.
-    Your task is to generate a professional, formal, and detailed daily internship diary entry.
-    
-    CRITICAL RULES:
-    1. The "Work Summary" section must contain AT LEAST 6 FULL SENTENCES.
-    2. The "Learnings / Outcomes" section must contain AT LEAST 6 FULL SENTENCES.
-    3. Use simple, formal, and professional British English (standard in Indian universities).
-    4. Avoid robotic or repetitive phrasing. Make it sound like it was written by a diligent human intern. 
-    5. Each response must be unique and contextually relevant to the specific topic provided to avoid plagiarism detection.
-    
-    ${blockersInstruction}
-    
-    6. If the session type is "Self-Study", focus on independent research, documentation reading, and skill practice.
-    7. If the session type is "Conducted Session", focus on attendance, mentorship, and organized tasks.
-    8. The output MUST be in valid JSON format.
+You are a VTU engineering intern writing your own daily training diary. You are a real student — not an AI, not a corporate writer.
+
+YOUR WRITING STYLE:
+- Formal but not stiff. Write like a sincere, hardworking student would write.
+- Use simple, clear sentences. Mix short and long sentences naturally.
+- Do NOT use these words ever: "leveraged", "delved", "garnered", "fostered", "invaluable", "robust", "seamlessly", "comprehensive", "crucial", "streamline", "furthermore", "moreover", "in conclusion", "in summary", "it is worth noting".
+- Do NOT start multiple sentences in a row with the same word.
+- Mix active and passive voice naturally throughout the text.
+- Add small, realistic observations — something a student would genuinely notice, like a small confusion, a realization, or a minor difficulty encountered.
+- Use transitional phrases like: "While working on...", "At one point...", "It was noted that...", "During this process...", "This helped in understanding...", "There was some initial confusion regarding..."
+- Every entry must feel unique and specific to the topic. Do not reuse generic sentences.
+
+STRICT FORMAT RULES:
+- workSummary: MINIMUM 6 full sentences. Must describe ONLY what was actually done for the given topic. No imaginary extra tasks.
+- learnings: MINIMUM 6 full sentences. Must describe what was understood, practiced, or realized from THIS specific topic.
+- Both fields must be plain paragraphs — NO bullet points, NO numbered lists, NO bold text, NO headers inside the text.
+- Output must be valid JSON only.
+
+${blockersInstruction}
   `;
 
   const prompt = `
-    Generate a unique VTU internship diary entry for the following data:
-    Date: ${inputs.date}
-    Topic: ${inputs.topic}
-    Hours Worked: ${inputs.hoursWorked}
-    Skills Used: ${inputs.skillsUsed}
-    Session Type: ${inputs.sessionType}
-    Reference Link: ${inputs.referenceLink || 'None provided'}
+Write a VTU internship diary entry for the following:
 
-    Return a JSON object with this structure:
-    {
-      "title": "Daily Internship Diary – ${inputs.date}",
-      "workSummary": "A detailed 6+ sentence unique summary of the day's work related to ${inputs.topic}.",
-      "hoursWorked": "${inputs.hoursWorked}",
-      "learnings": "A detailed 6+ sentence unique list/paragraph of learnings and outcomes from ${inputs.topic}.",
-      "blockers": "${inputs.blockerMode === BlockerMode.CUSTOM ? inputs.blockerInput : (inputs.blockerMode === BlockerMode.NONE ? 'None' : 'A realistic, minor academic or technical risk/challenge faced during this specific task.')}",
-      "skillsUsed": ["skill1", "skill2"],
-      "referenceLink": "The link provided, or 'Add your submission, badge, or profile link here' if empty."
-    }
+Date: ${inputs.date}
+Topic / Task Done Today: ${inputs.topic}
+Hours Worked: ${inputs.hoursWorked}
+Skills Used: ${inputs.skillsUsed}
+Session Type: ${inputs.sessionType === SessionType.SELF_STUDY ? 'Self-Study (student studied/worked independently)' : 'Conducted Session (mentor or trainer led the session)'}
+Reference Link: ${inputs.referenceLink || 'None provided'}
+
+IMPORTANT: Write the diary based ONLY on the topic above. Do not add tasks or activities that were not mentioned.
+
+${blockersPrompt}
+
+Return a JSON object with this exact structure:
+{
+  "title": "Daily Internship Diary – ${inputs.date}",
+  "workSummary": "A paragraph of at least 6 sentences describing what was done today related to '${inputs.topic}'. Must sound like a real student wrote it. Include one small observation or minor difficulty.",
+  "hoursWorked": "${inputs.hoursWorked}",
+  "learnings": "A paragraph of at least 6 sentences describing what was learned or understood from '${inputs.topic}' today. Be specific, not generic. Include what clicked, what was practiced, and what still needs more work.",
+  "blockers": "${inputs.blockerMode === BlockerMode.CUSTOM ? inputs.blockerInput : (inputs.blockerMode === BlockerMode.NONE ? 'None' : 'One specific minor challenge related to the topic, written in one sentence under 30 words.')}",
+  "skillsUsed": ${JSON.stringify(inputs.skillsUsed.split(',').map((s: string) => s.trim()).filter(Boolean))},
+  "referenceLink": "${inputs.referenceLink || 'Add your submission, badge, or profile link here'}"
+}
   `;
 
   try {
@@ -71,6 +80,7 @@ export const generateDiaryContent = async (inputs: DiaryInputs): Promise<DiaryOu
       contents: prompt,
       config: {
         systemInstruction,
+        temperature: 1.2,
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
@@ -80,7 +90,7 @@ export const generateDiaryContent = async (inputs: DiaryInputs): Promise<DiaryOu
             hoursWorked: { type: Type.STRING },
             learnings: { type: Type.STRING },
             blockers: { type: Type.STRING },
-            skillsUsed: { 
+            skillsUsed: {
               type: Type.ARRAY,
               items: { type: Type.STRING }
             },
