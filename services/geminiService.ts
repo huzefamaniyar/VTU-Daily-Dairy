@@ -83,7 +83,12 @@ Session Type: ${inputs.sessionType === SessionType.SELF_STUDY
 Reference Link: ${inputs.referenceLink || 'None'}
 
 BEFORE WRITING — READ THESE CAREFULLY:
-1. Write ONLY about "${inputs.topic}". If the topic says "Kotlin Playground", do not mention Android Studio, XML, or anything else not in the topic.
+1. Write ONLY about what is literally mentioned in: "${inputs.topic}". 
+   - If topic does NOT mention XML → do NOT write about XML.
+   - If topic does NOT mention layouts → do NOT write about layouts.
+   - If topic does NOT mention Android Studio → do NOT write about Android Studio.
+   - If topic does NOT mention Kotlin Playground → do NOT write about Kotlin Playground.
+   - ONLY use details explicitly present in the topic string.
 2. Do NOT use any banned phrase. Not even once.
 3. workSummary must have one sentence about something that took time or was slightly confusing.
 4. learnings must have one sentence about what the student wants to try or explore more.
