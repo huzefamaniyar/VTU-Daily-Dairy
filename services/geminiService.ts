@@ -6,7 +6,12 @@ const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
 export const generateDiaryContent = async (inputs: DiaryInputs): Promise<DiaryOutput> => {
   const model = 'gemini-2.5-flash-preview-05-20';
 
-  // Determine blockers content based on mode
+  // Parse exact skills user selected — AI must NEVER change this
+  const exactSkills = inputs.skillsUsed
+    .split(',')
+    .map((s: string) => s.trim())
+    .filter(Boolean);
+
   let blockersInstruction = '';
   let blockersPrompt = '';
 
@@ -14,69 +19,89 @@ export const generateDiaryContent = async (inputs: DiaryInputs): Promise<DiaryOu
     blockersInstruction = 'The "blockers" field must be exactly: "None".';
     blockersPrompt = 'Set blockers to "None".';
   } else if (inputs.blockerMode === BlockerMode.CUSTOM) {
-    blockersInstruction = `The "blockers" field must contain exactly this text: "${inputs.blockerInput}"`;
-    blockersPrompt = `Set blockers to: "${inputs.blockerInput}"`;
+    blockersInstruction = `The "blockers" field must be EXACTLY: "${inputs.blockerInput}". Copy it word for word.`;
+    blockersPrompt = `Set blockers to exactly: "${inputs.blockerInput}"`;
   } else {
     blockersInstruction = `BLOCKERS RULE:
-    - Write ONE sentence about a small, realistic problem faced while doing THIS specific task.
-    - It must be directly related to "${inputs.topic}".
-    - Write it simply, like a student explaining what went wrong or what was confusing.
-    - Examples: "Some concepts were hard to understand at first and needed to be re-read." / "Setting up the environment took longer than expected due to some errors." / "It was difficult to find clear examples for this topic online."
-    - Do NOT write "None". Keep it under 25 words. No bullet points.`;
-    blockersPrompt = `Write one simple, realistic challenge or confusion faced while working on: ${inputs.topic}.`;
+- Write ONE sentence, max 25 words, about a small problem faced during THIS task only.
+- Must be about: "${inputs.topic}"
+- Student style: "Some syntax was confusing at first." / "It took time to figure out why the output was wrong."
+- Do NOT write "None". One sentence only.`;
+    blockersPrompt = `Write one honest student sentence (max 25 words) about a small difficulty in: ${inputs.topic}`;
   }
 
   const systemInstruction = `
-You are a VTU engineering student writing your own daily internship diary. You study in a tier-3 college. You are sincere but not exceptional — you write clearly and honestly, not like a professional corporate writer.
+You are a VTU engineering student writing your daily internship diary. Tier-3 college. Sincere but normal student.
 
-YOUR EXACT WRITING STYLE:
-- Write like a real student who is trying their best — simple words, honest observations.
-- Use formal English but keep sentences easy to understand. Avoid complex vocabulary.
-- Mix short and long sentences. Not every sentence should sound the same.
-- Do NOT use these words at all: "leveraged", "delved", "garnered", "fostered", "invaluable", "robust", "seamlessly", "furthermore", "moreover", "in conclusion", "in summary", "it is worth noting", "comprehensive", "crucial", "streamline", "pivotal", "holistic", "dynamic".
-- Do NOT start two sentences in a row with the same word.
-- Use simple transitions like: "After this...", "While doing this...", "At one point...", "This helped in understanding...", "There was some confusion initially...", "It took some time to..."
-- Include one small genuine observation — something a student would actually notice, like a small confusion, a realization, or a step that took longer than expected.
-- Mix active and passive voice naturally.
+BANNED PHRASES — DO NOT USE ANY OF THESE EVER:
+- "I gained a deeper understanding" / "I gained a better understanding"  
+- "I successfully learned" / "I successfully implemented"
+- "I achieved a better grasp" / "I achieved a deeper understanding"
+- "I gained valuable insight" / "I was able to achieve"
+- "I have developed a more systematic"
+- "real-world behavior" / "evaluation criteria" / "automated test cases"
+- "professional development" / "enhanced my skills" / "key takeaway"
+- "I honed" / "I solidified" / "I reinforced" / "overall experience"
+- "leveraged" / "delved" / "garnered" / "fostered" / "invaluable"
+- "robust" / "seamlessly" / "streamline" / "pivotal" / "holistic"
+- "furthermore" / "moreover" / "in conclusion" / "in summary"
+- "it is worth noting" / "comprehensive" / "crucial"
+- "this activity" / "this endeavour"
 
-STRICT LENGTH RULES:
-- workSummary: MINIMUM 6 full sentences. Write only about what was done for the given topic. Do NOT add extra tasks or activities not mentioned.
-- learnings: MINIMUM 6 full sentences. Write what was understood or practiced from THIS specific topic. Include what was easy, what was hard, and what the student wants to explore more.
-- Both fields: plain paragraph only. No bullet points, no numbered lists, no bold text, no sub-headings.
+USE THESE PATTERNS INSTEAD:
+- "Today I worked on..." / "I spent time on..." / "I tried to..."
+- "It took me some time to..." / "I was not sure how... so I looked it up"
+- "I ran the code and it gave an error, then I fixed it by..."
+- "I think I understand this now" / "I want to practise this more"
+- "There was some confusion at first, but..."
+- "After trying a few times, it started making sense"
+- "One thing I noticed was..."
+
+RULES:
+1. Simple clear English. Mix short and long sentences.
+2. Never start two sentences in a row with the same word.
+3. Include exactly ONE small confusion or struggle a real student faces.
+4. Write ONLY about the given topic. Do NOT add tools, platforms, or tasks not in the topic.
+5. Plain paragraph — no bullet points, no numbered lists, no bold text.
+6. workSummary: MINIMUM 6 sentences.
+7. learnings: MINIMUM 6 sentences.
 
 ${blockersInstruction}
 
-Output must be valid JSON only. No extra text outside JSON.
-  `;
+Output: valid JSON only. Nothing outside JSON.
+`;
 
   const prompt = `
-Write a VTU internship diary entry for the following:
+Write a VTU internship diary entry for this student:
 
 Date: ${inputs.date}
-Task / Topic Done Today: ${inputs.topic}
+Topic done today: ${inputs.topic}
 Hours Worked: ${inputs.hoursWorked}
-Skills Used: ${inputs.skillsUsed}
-Session Type: ${inputs.sessionType === SessionType.SELF_STUDY ? 'Self-Study (student studied on their own)' : 'Conducted Session (a mentor or trainer guided the session)'}
+Session Type: ${inputs.sessionType === SessionType.SELF_STUDY
+    ? 'Self-Study (student worked alone)'
+    : 'Conducted Session (mentor was present)'}
 Reference Link: ${inputs.referenceLink || 'None'}
 
-IMPORTANT INSTRUCTIONS:
-- Write ONLY about the topic mentioned above. Do not add any extra tasks, meetings, or activities.
-- The student is a tier-3 college student — write simply and honestly, not like a professional report.
-- Make each entry feel unique and specific to the topic.
+BEFORE WRITING — READ THESE CAREFULLY:
+1. Write ONLY about "${inputs.topic}". If the topic says "Kotlin Playground", do not mention Android Studio, XML, or anything else not in the topic.
+2. Do NOT use any banned phrase. Not even once.
+3. workSummary must have one sentence about something that took time or was slightly confusing.
+4. learnings must have one sentence about what the student wants to try or explore more.
+5. Write like a real student — simple, honest, slightly imperfect sentences. Not like a report.
 
 ${blockersPrompt}
 
-Return this exact JSON structure:
+Return ONLY this JSON, nothing else:
 {
   "title": "Daily Internship Diary – ${inputs.date}",
-  "workSummary": "6+ sentences describing what the student did today related to '${inputs.topic}'. Simple words. Include one small observation or step that took time. No extra invented tasks.",
+  "workSummary": "6+ sentence plain paragraph about what was done in '${inputs.topic}'. Student language. One small difficulty included. No invented tasks or tools.",
   "hoursWorked": "${inputs.hoursWorked}",
-  "learnings": "6+ sentences about what the student understood or practiced from '${inputs.topic}'. Mention what was easy, what was confusing, and what they want to try more. Simple and honest tone.",
-  "blockers": "${inputs.blockerMode === BlockerMode.CUSTOM ? inputs.blockerInput : (inputs.blockerMode === BlockerMode.NONE ? 'None' : 'One simple sentence about a small challenge faced, under 25 words, related to the topic.')}",
-  "skillsUsed": ${JSON.stringify(inputs.skillsUsed.split(',').map((s: string) => s.trim()).filter(Boolean))},
+  "learnings": "6+ sentence plain paragraph about what was understood from '${inputs.topic}'. Mention what was hard and what to try more. Honest tone.",
+  "blockers": "as instructed above",
+  "skillsUsed": ${JSON.stringify(exactSkills)},
   "referenceLink": "${inputs.referenceLink || 'Add your submission, badge, or profile link here'}"
 }
-  `;
+`;
 
   try {
     const response = await ai.models.generateContent({
@@ -84,7 +109,7 @@ Return this exact JSON structure:
       contents: prompt,
       config: {
         systemInstruction,
-        temperature: 1.3,
+        temperature: 1.4,
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
@@ -106,6 +131,10 @@ Return this exact JSON structure:
     });
 
     const result = JSON.parse(response.text || '{}');
+
+    // HARD OVERRIDE: Always force user's selected skills — AI cannot change this
+    result.skillsUsed = exactSkills;
+
     return result as DiaryOutput;
   } catch (error) {
     console.error("Error generating diary:", error);
