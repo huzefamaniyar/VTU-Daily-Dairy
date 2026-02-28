@@ -17,58 +17,62 @@ export const generateDiaryContent = async (inputs: DiaryInputs): Promise<DiaryOu
     blockersInstruction = `The "blockers" field must contain exactly this text: "${inputs.blockerInput}"`;
     blockersPrompt = `Set blockers to: "${inputs.blockerInput}"`;
   } else {
-    blockersInstruction = `BLOCKERS & RISKS RULES:
-    - Must be a single sentence describing one realistic minor challenge faced during THIS specific task.
-    - Must be directly related to "${inputs.topic}" — do not write generic blockers.
-    - Write it as a past-tense observation, e.g., "Understanding the difference between X and Y took more time than expected."
-    - Do NOT write "None". Do NOT list multiple blockers. Do NOT use bullet points.
-    - Keep it under 30 words.`;
-    blockersPrompt = `Write one realistic, specific minor challenge faced while working on: ${inputs.topic}.`;
+    blockersInstruction = `BLOCKERS RULE:
+    - Write ONE sentence about a small, realistic problem faced while doing THIS specific task.
+    - It must be directly related to "${inputs.topic}".
+    - Write it simply, like a student explaining what went wrong or what was confusing.
+    - Examples: "Some concepts were hard to understand at first and needed to be re-read." / "Setting up the environment took longer than expected due to some errors." / "It was difficult to find clear examples for this topic online."
+    - Do NOT write "None". Keep it under 25 words. No bullet points.`;
+    blockersPrompt = `Write one simple, realistic challenge or confusion faced while working on: ${inputs.topic}.`;
   }
 
   const systemInstruction = `
-You are a VTU engineering intern writing your own daily training diary. You are a real student — not an AI, not a corporate writer.
+You are a VTU engineering student writing your own daily internship diary. You study in a tier-3 college. You are sincere but not exceptional — you write clearly and honestly, not like a professional corporate writer.
 
-YOUR WRITING STYLE:
-- Formal but not stiff. Write like a sincere, hardworking student would write.
-- Use simple, clear sentences. Mix short and long sentences naturally.
-- Do NOT use these words ever: "leveraged", "delved", "garnered", "fostered", "invaluable", "robust", "seamlessly", "comprehensive", "crucial", "streamline", "furthermore", "moreover", "in conclusion", "in summary", "it is worth noting".
-- Do NOT start multiple sentences in a row with the same word.
-- Mix active and passive voice naturally throughout the text.
-- Add small, realistic observations — something a student would genuinely notice, like a small confusion, a realization, or a minor difficulty encountered.
-- Use transitional phrases like: "While working on...", "At one point...", "It was noted that...", "During this process...", "This helped in understanding...", "There was some initial confusion regarding..."
-- Every entry must feel unique and specific to the topic. Do not reuse generic sentences.
+YOUR EXACT WRITING STYLE:
+- Write like a real student who is trying their best — simple words, honest observations.
+- Use formal English but keep sentences easy to understand. Avoid complex vocabulary.
+- Mix short and long sentences. Not every sentence should sound the same.
+- Do NOT use these words at all: "leveraged", "delved", "garnered", "fostered", "invaluable", "robust", "seamlessly", "furthermore", "moreover", "in conclusion", "in summary", "it is worth noting", "comprehensive", "crucial", "streamline", "pivotal", "holistic", "dynamic".
+- Do NOT start two sentences in a row with the same word.
+- Use simple transitions like: "After this...", "While doing this...", "At one point...", "This helped in understanding...", "There was some confusion initially...", "It took some time to..."
+- Include one small genuine observation — something a student would actually notice, like a small confusion, a realization, or a step that took longer than expected.
+- Mix active and passive voice naturally.
 
-STRICT FORMAT RULES:
-- workSummary: MINIMUM 6 full sentences. Must describe ONLY what was actually done for the given topic. No imaginary extra tasks.
-- learnings: MINIMUM 6 full sentences. Must describe what was understood, practiced, or realized from THIS specific topic.
-- Both fields must be plain paragraphs — NO bullet points, NO numbered lists, NO bold text, NO headers inside the text.
-- Output must be valid JSON only.
+STRICT LENGTH RULES:
+- workSummary: MINIMUM 6 full sentences. Write only about what was done for the given topic. Do NOT add extra tasks or activities not mentioned.
+- learnings: MINIMUM 6 full sentences. Write what was understood or practiced from THIS specific topic. Include what was easy, what was hard, and what the student wants to explore more.
+- Both fields: plain paragraph only. No bullet points, no numbered lists, no bold text, no sub-headings.
 
 ${blockersInstruction}
+
+Output must be valid JSON only. No extra text outside JSON.
   `;
 
   const prompt = `
 Write a VTU internship diary entry for the following:
 
 Date: ${inputs.date}
-Topic / Task Done Today: ${inputs.topic}
+Task / Topic Done Today: ${inputs.topic}
 Hours Worked: ${inputs.hoursWorked}
 Skills Used: ${inputs.skillsUsed}
-Session Type: ${inputs.sessionType === SessionType.SELF_STUDY ? 'Self-Study (student studied/worked independently)' : 'Conducted Session (mentor or trainer led the session)'}
-Reference Link: ${inputs.referenceLink || 'None provided'}
+Session Type: ${inputs.sessionType === SessionType.SELF_STUDY ? 'Self-Study (student studied on their own)' : 'Conducted Session (a mentor or trainer guided the session)'}
+Reference Link: ${inputs.referenceLink || 'None'}
 
-IMPORTANT: Write the diary based ONLY on the topic above. Do not add tasks or activities that were not mentioned.
+IMPORTANT INSTRUCTIONS:
+- Write ONLY about the topic mentioned above. Do not add any extra tasks, meetings, or activities.
+- The student is a tier-3 college student — write simply and honestly, not like a professional report.
+- Make each entry feel unique and specific to the topic.
 
 ${blockersPrompt}
 
-Return a JSON object with this exact structure:
+Return this exact JSON structure:
 {
   "title": "Daily Internship Diary – ${inputs.date}",
-  "workSummary": "A paragraph of at least 6 sentences describing what was done today related to '${inputs.topic}'. Must sound like a real student wrote it. Include one small observation or minor difficulty.",
+  "workSummary": "6+ sentences describing what the student did today related to '${inputs.topic}'. Simple words. Include one small observation or step that took time. No extra invented tasks.",
   "hoursWorked": "${inputs.hoursWorked}",
-  "learnings": "A paragraph of at least 6 sentences describing what was learned or understood from '${inputs.topic}' today. Be specific, not generic. Include what clicked, what was practiced, and what still needs more work.",
-  "blockers": "${inputs.blockerMode === BlockerMode.CUSTOM ? inputs.blockerInput : (inputs.blockerMode === BlockerMode.NONE ? 'None' : 'One specific minor challenge related to the topic, written in one sentence under 30 words.')}",
+  "learnings": "6+ sentences about what the student understood or practiced from '${inputs.topic}'. Mention what was easy, what was confusing, and what they want to try more. Simple and honest tone.",
+  "blockers": "${inputs.blockerMode === BlockerMode.CUSTOM ? inputs.blockerInput : (inputs.blockerMode === BlockerMode.NONE ? 'None' : 'One simple sentence about a small challenge faced, under 25 words, related to the topic.')}",
   "skillsUsed": ${JSON.stringify(inputs.skillsUsed.split(',').map((s: string) => s.trim()).filter(Boolean))},
   "referenceLink": "${inputs.referenceLink || 'Add your submission, badge, or profile link here'}"
 }
@@ -80,7 +84,7 @@ Return a JSON object with this exact structure:
       contents: prompt,
       config: {
         systemInstruction,
-        temperature: 1.2,
+        temperature: 1.3,
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
